@@ -6,6 +6,7 @@ const LocalStrategy = require('passport-local').Strategy;
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 require('dotenv').config();
+const bcrypt = require('bcrypt');
 
 const mongoDb =  process.env.MONGODB_URI;
 mongoose.connect(mongoDb,{useUnifiedTopology:true, useNewUrlParser:true });
@@ -30,7 +31,8 @@ passport.use(
       const user = await User.findOne({username:username});
       if(!user) return done(null, false, {message: 'Incorrect Username'});
 
-      if(user.password !== password)  return done(null, false, {message: 'Incorrect Password'});
+      const passwordCheck = await bcrypt.compare(password, user.password);
+      if(!passwordCheck)  return done(null, false, {message: 'Incorrect Password'});
 
       return done(null, user);
     }catch(err){
@@ -61,9 +63,10 @@ app.get('/signup',(req, res) => res.render('signUpForm'));
 
 app.post('/signup', async (req, res, next) =>{
   try{
+    const hashedPassword = await bcrypt.hash(req.body.password,10);
     const user = new User({
       username: req.body.username,
-      password: req.body.password,
+      password: hashedPassword,
     });
     await user.save();
     return res.redirect('/');
