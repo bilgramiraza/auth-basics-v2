@@ -38,6 +38,17 @@ passport.use(
     }
   }),
 );
+passport.serializeUser(function(user,done){
+  done(null, user.id);
+});
+passport.deserializeUser(async function(id,done){
+  try{
+    const user = await User.findById(id);
+    done(null, user);
+  }catch(err){
+    done(err);
+  }
+});
 
 app.use(session({ secret:'dogs', resave:false, saveUninitialized:true}));
 app.use(passport.initialize());
